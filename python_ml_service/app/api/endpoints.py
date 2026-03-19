@@ -18,14 +18,17 @@ class AnalysisRequest(BaseModel):
 
 @router.post("/analyze")
 async def analyze_finance(data: AnalysisRequest):
-    # 1. Готовим фичи для нейронки 
-    avg_spend = np.mean([t.amount for t in data.history]) if data.history else 0
-    features = [data.current_balance, avg_spend, len(data.history), 0, 0] # Заглушка
+    # Собираем данные для нейронки (5 параметров)
+    amounts = [abs(t.amount) for t in data.history]
+    avg_spend = np.mean(amounts) if amounts else 0
     
-    # 2. Получаем прогноз
+    # [Баланс, Средний чек, Кол-во транзакций, 0, 0]
+    features = [float(data.current_balance), float(avg_spend), float(len(data.history)), 0.0, 0.0]
+    
+    # Получаем прогноз от нейронки
     prediction = ml_service.predict_expenses(features)
     
-    # 3. Готовим данные для графиков
+    # Данные для круговой диаграммы
     chart_data = prepare_chart_data(data.history)
     
     return {
